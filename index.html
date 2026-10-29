@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#14513a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mahjong">
+<title>Mahjong</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <button class="btn" id="hint"><span>💡</span>Pista</button>
+  <div id="info"><b id="lvl">Nivel 1</b><span id="pairs"></span></div>
+  <button class="btn" id="undo"><span>↩️</span>Atrás</button>
+</header>
+<main id="board"></main>
+<div class="ov hidden" id="ov"><div class="card"><h1 id="ovt"></h1><p id="ovp"></p><div id="ovb"></div></div></div>
+
+<script src="script.js"></script>
+</body>
+</html>
