@@ -10,3 +10,5 @@ Mahjong solitario pensado para que sea facil de usar en el movil: fichas grandes
 
 ## Si cambias el juego
 Sube el numero de `VERSION` en `service-worker.js` (por ejemplo `mahjong-v2`) para que los moviles carguen la version nueva.
+
+App ID: `/vr-mahjong` (manifest id, never change it)
