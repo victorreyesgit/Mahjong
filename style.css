@@ -1,4 +1,4 @@
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html,body{margin:0;height:100%;overflow:hidden;touch-action:manipulation;overscroll-behavior:none}
 body{display:flex;flex-direction:column;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;color:#fff;
  background:radial-gradient(ellipse at 50% 40%,#2a8a5f 0%,#1a6847 55%,#10432f 100%);
@@ -12,7 +12,7 @@ header{display:flex;justify-content:space-between;align-items:center;padding:10p
 #info{text-align:center;line-height:1.25}
 #lvl{display:block;font-size:28px}
 #pairs{font-size:19px;opacity:.9}
-#board{position:relative;flex:1;min-height:0;overflow:hidden}
+#board{position:relative;flex:1;min-height:0;overflow:hidden;touch-action:none}
 #field{position:relative;width:100%}
 .t{--ring:0 0 0 3px #fff;position:absolute;border-radius:14%;background:linear-gradient(160deg,#fffdf5,#efe4c6);
  box-shadow:var(--ring),inset 0 0 0 2px #cdbf94,0 calc(var(--e)*.5) 0 #bfae7e,0 var(--e) 0 #9c8b5d,0 calc(var(--e)*2) calc(var(--e)*2.5) rgba(0,0,0,.5);
@@ -21,9 +21,10 @@ header{display:flex;justify-content:space-between;align-items:center;padding:10p
 .t::after{content:"";position:absolute;inset:0;border-radius:inherit;background:rgba(40,32,12,.55);opacity:0;transition:opacity .25s;pointer-events:none}
 .t b{font-size:calc(var(--tw)*.64);line-height:1}
 .t svg{display:block}
+.t b.em{font-size:calc(var(--tw)*.62);font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;font-weight:400;line-height:1}
 .t.lock{--ring:0 0 0 0 transparent}
 .t.lock::after{opacity:1}
-.t.sel{--ring:0 0 0 5px #ffc400;transform:translateY(-6px) scale(1.06)}
+.t.sel{--ring:0 0 0 6px #ffc400;transform:translateY(-9px) scale(1.08);z-index:99990 !important}
 .t.gone{opacity:0;transform:scale(.4);pointer-events:none}
 .t.hint{animation:pulse .8s ease-in-out infinite}
 .t.no{animation:shake .3s}
@@ -37,4 +38,16 @@ header{display:flex;justify-content:space-between;align-items:center;padding:10p
 .card p{font-size:21px;margin:0 0 14px}
 .card button{display:block;width:100%;padding:20px;font:700 24px system-ui,sans-serif;border:0;border-radius:18px;background:#2e9e5b;color:#fff;margin-top:12px}
 .card button.alt{background:#e4dcc5;color:#333}
+#bar{height:10px;margin:2px 16px 8px;border-radius:6px;background:rgba(0,0,0,.28);overflow:hidden}
+#bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd54a,#ff9800);border-radius:6px;transition:width .45s}
+.spark{position:absolute;width:10px;height:10px;border-radius:50%;pointer-events:none;z-index:90000;animation:spark .65s ease-out forwards}
+@keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.combo{position:absolute;font:900 36px system-ui,sans-serif;color:#ffd54a;text-shadow:0 3px 0 #7a4d00,0 0 14px rgba(255,200,0,.9);pointer-events:none;z-index:95000;white-space:nowrap;animation:combo 1.1s ease-out forwards}
+@keyframes combo{0%{opacity:0;transform:translate(-50%,-30%) scale(.5)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.25)}100%{opacity:0;transform:translate(-50%,-170%) scale(1)}}
+.confetti{position:fixed;top:-24px;width:10px;height:16px;pointer-events:none;z-index:100000;animation:fall linear forwards}
+@keyframes fall{to{transform:translate(var(--dx),112vh) rotate(var(--r))}}
+.card{max-height:92vh;overflow:auto}
+.stars{font-size:46px;letter-spacing:4px;margin:2px 0 6px}
+.card small{display:block;font-size:17px;opacity:.75;margin-top:4px}
+body.foto{background:linear-gradient(rgba(16,67,47,.5),rgba(16,67,47,.5)),url("fondo.jpg") center/cover no-repeat}
 @media(prefers-reduced-motion:reduce){.t,.t.hint{animation:none}}

@@ -1,6 +1,6 @@
 // Guarda los archivos en el movil para que funcione sin internet.
 // Si cambias algun archivo del juego, sube el numero de VERSION para que los moviles se actualicen.
-const VERSION = "vr-mahjong-v2";
+const VERSION = "vr-mahjong-v3";
 const FILES = ["./", "index.html", "style.css", "script.js", "manifest.json", "icon-192.png", "icon-512.png", "apple-touch-icon.png"];
 
 self.addEventListener("install", e => {

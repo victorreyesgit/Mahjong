@@ -1,6 +1,30 @@
-const NTYPES = 150;   // tipos de ficha distintos (cada pareja del tablero usa un tipo distinto mientras haya tipos)
 
-// ---------- Fichas: 36 de puntos (estilo dominó: 1-6 puntos en 6 colores) + 114 símbolos chinos = 150 tipos ----------
+// ---------- Ajustes personales (se pueden cambiar) ----------
+const NOMBRE = "";                                   // por ejemplo "Abuelo" o su nombre: sale en los mensajes de felicitación
+const FICHAS = "emoji";                              // "emoji" (dibujos: sol, luna, barco, cerveza...) o "chino" (puntos tipo dominó y símbolos chinos)
+const FAVORITOS = ["🍺","🍷","🐶","⛵","☀️","🌙"];      // (solo con emoji) estos emoticonos salen siempre en los tableros
+const DESCANSO_MIN = 30;                             // cada cuántos minutos se le sugiere descansar (solo al terminar un nivel)
+
+// ---------- Fichas ----------
+// Dos juegos de fichas: "emoji" (dibujos) o "chino" (puntos tipo dominó y símbolos chinos).
+// Se elige con FICHAS (arriba) o abriendo el juego con ?fichas=chino  /  ?fichas=emoji
+const MODO = (typeof location !== "undefined" && new URLSearchParams(location.search).get("fichas")) || FICHAS;
+const CHINO = MODO === "chino";
+
+// Emoticonos (los más reconocibles primero; cada pareja del tablero usa uno distinto)
+// Un "!" al final añade el selector de emoji (para que salga en color y no como letra negra)
+const EMOJIS = ("☀! 🌙 ⛵ 🍺 🍷 🐶 🍕 ⭐ 🌈 ❤! 🍎 🐱 🚗 🎂 ☕ 🌹 🐟 🏠 🔔 🎁 " +
+  "🍔 🍦 🍌 🍇 🍉 🍊 🍓 🐴 🐮 🐷 🐑 🐔 🦆 🐦 🦋 🐝 🌻 🌷 🌴 🍀 " +
+  "🍄 🌲 🍁 🌊 ⛰! 🔥 💧 ❄! ☁! ⚡ 🥂 🍸 🍹 🍾 🥛 🍵 " +
+  "🍟 🌭 🥪 🌮 🍝 🍣 🍤 🍗 🥩 🥓 🍳 🥐 🍞 🧀 🥗 🍰 🍩 🍪 🍫 🍿 " +
+  "🥖 🍜 🍚 🍒 🍑 🍐 🍍 🥝 🍋 🥕 🌽 🍅 🥑 🥔 🍆 🥒 🥜 🌰 🍯 🥚 " +
+  "🐢 🐘 🦁 🐯 🐻 🐼 🐵 🐸 🐰 🦊 🐌 🐙 🦀 🐬 🐳 🦉 🐧 🐨 🐭 🐞 🐍 🐊 🦈 🦅 🐿! 🐪 " +
+  "🚢 🚲 🚂 ✈! 🚜 ⚓ 🚌 🚀 🛵 🚁 🚒 🛶 🏰 ⛪ " +
+  "⚽ 🎣 🎲 🎵 🎸 🎺 🎈 🔑 📻 📺 ☎! ⌚ 👓 🎩 👑 💎 🏆 ⏰ 🕯! ✂! 🔨 📖 🎯 🃏 🔭 🏀 🎾 🎳 ⛳ 🥁 🎻 🎹 " +
+  "💡 📷 ☂! 🎒 👟 👜 💍 🔦 🔒 💰 ✏! 📎 🏺 🥞 🍭 🍬 🥫 🍈 🌵 🌺 🌼 ⛄ 🍂 🐠 🌍 🥃")
+  .split(/\s+/).map(e => e.endsWith("!") ? e.slice(0,-1) + "\uFE0F" : e);
+
+// Fichas chinas: 36 de puntos (estilo dominó: 1-6 puntos en 6 colores) + 114 símbolos chinos = 150 tipos
 const DOTS = [[[30,40]],[[30,22],[30,58]],[[16,20],[30,40],[44,60]],[[18,24],[42,24],[18,56],[42,56]],
   [[18,24],[42,24],[30,40],[18,56],[42,56]],[[18,18],[42,18],[18,40],[42,40],[18,62],[42,62]]];
 const DCOL = ["#d62828","#1f5fbf","#1e8e3e","#8e44ad","#e08a00","#0e9aa7"];
@@ -8,7 +32,7 @@ const FULL = "一二三四五六七八九十東南西北中發白福祿壽喜財
 const SIMPLE = "一二三四五六七八九十人口大小土山川日月木水火手心子女天中王力北白田石米左右上下外半友耳足車門光平安和美年分少多前後內金東南西雲雨風雪花星地";
 const CHARS = [...SIMPLE, ...[...FULL].filter(c => !SIMPLE.includes(c))];      // de los más sencillos a los más complicados
 const CCOL = ["#c62828","#1f5fbf","#1e8e3e","#8e44ad","#d35400","#222"];
-function face(i){
+function faceChino(i){
   if (i < 36){
     const c = DCOL[Math.floor(i/6)], d = DOTS[i%6], r = d.length === 1 ? 15 : 9;
     return `<svg viewBox="0 0 60 80" style="width:66%;height:auto">` + d.map(p =>
@@ -17,9 +41,16 @@ function face(i){
   const k = i - 36;
   return `<b style="color:${CCOL[k%6]}">${CHARS[k]}</b>`;
 }
-// Orden de preferencia de los tipos: los más fáciles de reconocer primero (mezclando puntos y símbolos)
-const ORDER = []; { const dots = [...Array(36).keys()].sort((a,b) => a%6 - b%6 || a-b); let d = 0, c = 0;
+
+const NTYPES = CHINO ? 150 : EMOJIS.length;
+function face(i){ return CHINO ? faceChino(i) : `<b class="em">${EMOJIS[i]}</b>`; }
+const norm = e => e.replace(/\uFE0F/g, "");
+const FAV = CHINO ? [] : FAVORITOS.map(f => EMOJIS.findIndex(e => norm(e) === norm(f))).filter(i => i >= 0);
+// Orden de preferencia de los tipos: los más fáciles de reconocer primero (los favoritos, si hay, los primeros)
+const ORDER = [];
+if (CHINO){ const dots = [...Array(36).keys()].sort((a,b) => a%6 - b%6 || a-b); let d = 0, c = 0;     // puntos y símbolos mezclados, de sencillos a complicados
   for (let i=0;i<NTYPES;i++) ORDER.push(d < 36 && d*NTYPES <= i*36 ? dots[d++] : 36 + c++); }
+else ORDER.push(...FAV, ...[...Array(NTYPES).keys()].filter(i => !FAV.includes(i)));
 
 // ---------- Formas ----------
 // Cada forma = lista de piezas ["h", filas, ox, oy] o ["p", filas, ox, oy, capas]
@@ -72,8 +103,8 @@ function stackP(mask, depth){
   const all = [];
   for (let z=0; z<depth && cur.length; z++){
     cur.forEach(p => all.push({x:p[0], y:p[1], z, alive:true}));
-    const has = (x,y) => cur.some(p => p[0]===x && p[1]===y);
-    cur = cur.filter(p => has(p[0]+2,p[1]) && has(p[0],p[1]+2) && has(p[0]+2,p[1]+2)).map(p => [p[0]+1, p[1]+1]);
+    const set = new Set(cur.map(p => p[0]+","+p[1]));
+    cur = cur.filter(p => set.has((p[0]+2)+","+p[1]) && set.has(p[0]+","+(p[1]+2)) && set.has((p[0]+2)+","+(p[1]+2))).map(p => [p[0]+1, p[1]+1]);
   }
   return all;
 }
@@ -149,22 +180,27 @@ function terrace(mask, maxH){
 let CATALOG = null;
 function catalog(asp){
   if (CATALOG) return CATALOG;
-  const list = [], seen = new Set();
-  const add = (name, rows, group, w, h, layers) => {
-    const key = name + rows.join("/"); if (seen.has(key)) return; seen.add(key);
-    const n = [...rows.join("")].reduce((a,c) => a + (c === "." ? 0 : +c), 0);
-    list.push({name, rows, n: n - n%2, w, h, layers, group});
+  const list = [];
+  const add = (name, group, w, h, layers, n, get) => list.push({name, group, w, h, layers, n: n - n%2, get});
+  // Pirámide escalonada a partir de una silueta: cada capa nueva se coloca a medias sobre 4 fichas de la de abajo,
+  // así de cada capa de abajo se sigue viendo una parte (el aro de fuera) y se va "conquistando" hacia abajo
+  const pyr = (name, group, mask, W, Hh) => {
+    const cnt = []; stackP(mask, 14).forEach(t => cnt[t.z] = (cnt[t.z] || 0) + 1);
+    let n = 0;
+    for (let k=1; k<=cnt.length; k++){ n += cnt[k-1]; if (k >= 2) add(name, group, W, Hh, k, n, () => [P(mask, k)]); }
   };
-  [[1,GROUP1],[2,GROUP2]].forEach(([g,names]) => names.forEach(m => { for (let W=4; W<=12; W++){
+  [[1,GROUP1],[2,GROUP2]].forEach(([g,names]) => names.forEach(m => { for (let W=4; W<=11; W++){
     const Hh = Math.max(4, Math.round(W*asp)), mask = maskOf(m, W, Hh);
     if (mask.join("").split("#").length - 1 < 8) continue;
-    const h5 = terrace(mask, 5);
-    for (let mh=2; mh<=5; mh++) add(m, h5.map(r => r.replace(/\d/g, d => Math.min(+d, mh))), g, W, Hh, mh);
-    for (let mh=2; mh<=4; mh++) add(m, mask.map(r => r.replace(/#/g, String(mh))), g, W, Hh, mh);
+    pyr(m, g, mask, W, Hh);
   } }));
   Object.keys(FONT).forEach(ch => { const bm = FONT[ch].split("|");
-    for (const [s,hs] of [[1,[2,3,4,5]],[2,[2,3,4]]]) for (const hh of hs)
-      add("Letra " + ch, bm.flatMap(row => { const r = [...row].map(c => c === "#" ? String(hh) : ".").join("").replace(/./g, c => c.repeat(s)); return Array(s).fill(r); }), 3, 5*s, 7*s, hh);
+    const big = bm.flatMap(row => { const r = row.replace(/./g, c => c.repeat(2)); return [r, r]; });      // letra a doble tamaño (trazo de 2)
+    pyr("Letra " + ch, 3, big, 10, 14);
+    for (const [sc,hs] of [[1,[2,3,4,5]],[2,[2,3,4]]]) for (const hh of hs){
+      const rows = bm.flatMap(row => { const r = [...row].map(c => c === "#" ? String(hh) : ".").join("").replace(/./g, c => c.repeat(sc)); return Array(sc).fill(r); });
+      add("Letra " + ch, 3, 5*sc, 7*sc, hh, [...rows.join("")].reduce((a,c) => a + (c === "." ? 0 : +c), 0), () => [H(rows)]);
+    }
   });
   return CATALOG = list;
 }
@@ -174,15 +210,17 @@ function catalog(asp){
 const MAXTILES = 300;
 const target = L => { const t = L <= 60 ? 16 + 2*(L-1) : Math.round(134 + (MAXTILES-134)*(1 - Math.exp(-(L-60)/204))); return Math.min(MAXTILES, t - t%2); };
 // Dificultad (0-100) = 30% nº de fichas + 25% nº de tipos (todos distintos) + 45% estructura (fichas enterradas y capas)
-const Dof = (n, nt, S) => 30*n/MAXTILES + .25*nt + 45*S;
+const Dof = (n, nt, S) => 30*n/MAXTILES + 25*nt/(MAXTILES/2) + 45*S;
 // Estructura "de referencia" de cada nivel (ajustada midiendo las formas disponibles en cada tramo)
-const SREF = [[1,.12],[10,.36],[20,.44],[30,.5],[50,.52],[100,.54],[200,.56],[300,.6],[600,.64],[1000,.7]];
+const SREF = [[1,.3],[10,.5],[20,.62],[45,.7],[80,.77],[150,.85],[300,.92],[1000,.95]];
 function Sref(L){ let i = 0; while (i < SREF.length-2 && L > SREF[i+1][0]) i++;
   const [a,sa] = SREF[i], [b,sb] = SREF[i+1]; return sa + (sb-sa)*Math.max(0, Math.min(1, (L-a)/(b-a))); }
+// Capas que se buscan en cada nivel: muchas capas y un tablero pequeño (fichas grandes) mejor que un tablero enorme y plano
+const layersTarget = L => Math.min(9, Math.round(1 + 2*Math.log(1 + L/8)));
 const Dtarget = L => { const T = target(L); return Dof(T, Math.min(T/2, NTYPES), Sref(L)); };
 
 // Prepara una forma con el nº de fichas del nivel y mide su estructura.
-// Para quitar fichas sobrantes se quitan las de la capa más alta, de fuera hacia dentro y de dos en dos (simétrico): la figura se mantiene bonita.
+// Para quitar fichas sobrantes se quitan las de más afuera que no tapan a nadie, de dos en dos (simétrico): la figura y sus capas se mantienen.
 function evalRecipe(rec, T){
   const ts = patTiles([rec.name, rec.get()]);
   if (ts.length % 2) ts.pop();
@@ -192,34 +230,41 @@ function evalRecipe(rec, T){
   const far = t => ((t.x-mx/2)/(mx/2+2))**2 + ((t.y-my/2)/(my/2+2))**2;
   for (let n = ts.length; n > T;){
     const cand = ts.filter(t => t.alive && t.up.every(o => !o.alive));
-    const mz = Math.max(...cand.map(t => t.z));
-    const top = cand.filter(t => t.z === mz).sort((a,b) => far(b) - far(a) + (Math.random()-.5)*1e-6);
+    const top = cand.sort((a,b) => far(b) - far(a) + (Math.random()-.5)*1e-6);   // se quitan las de más afuera (así se conservan todas las capas)
     const a = top[0], m = at.get((mx-a.x)+","+a.y+","+a.z);
     a.alive = false; n--;
     if (m && m !== a && m.alive && n > T && m.up.every(o => !o.alive)){ m.alive = false; n--; }
   }
   const keep = ts.filter(t => t.alive), free = keep.filter(t => isFree(t)).length, mz = Math.max(...keep.map(t => t.z));
   const burial = 1 - free/keep.length;
-  return {ts:keep, name:rec.name, idx:rec.idx, burial, layers:mz+1, S: .55*burial + .45*Math.min(1, mz/5)};
+  const cw = (Math.max(...keep.map(t => t.x)) + 2)/2, ch = (Math.max(...keep.map(t => t.y)) + 2)/2;
+  const tw = Math.min(110, (board.clientWidth-12)/(cw+.1), (board.clientHeight-12)/(ch*1.25 + .15 + Math.min(.5, mz*.1)));   // tamaño de ficha que saldría
+  return {ts:keep, name:rec.name, idx:rec.idx, burial, layers:mz+1, tw, S: .5*burial + .5*Math.min(1, mz/8)};
 }
 // Formas candidatas para un nivel: las de siempre (si tienen tamaño parecido) + las nuevas ya desbloqueadas
 function recipesFor(T, L){
   const w = board.clientWidth - 12, h = board.clientHeight - 12, asp = h/(1.25*w) || 1.15;
   let rec = PATS.map((p,i) => ({name:p[0], idx:i, get:() => p[1]})).filter(q => PSTAT[q.idx].n >= T && PSTAT[q.idx].n <= T*2+12);
-  const maxG = L >= 200 ? 3 : L >= 100 ? 2 : L >= 30 ? 1 : 0;
+  const maxG = L >= 150 ? 3 : L >= 50 ? 2 : L >= 10 ? 1 : 0;
   if (maxG){
-    const es = catalog(asp).filter(e => e.group <= maxG && e.n >= T && e.n <= T*1.5+10);
-    es.forEach(e => e.tw = Math.min(w/e.w, h/(e.h*1.25 + .1*e.layers)));       // tamaño de ficha que saldría (que no queden diminutas)
-    const best = Math.max(0, ...es.map(e => e.tw));
-    rec = rec.concat(es.filter(e => e.tw >= best*.7).map(e => ({name:e.name, idx:-1, get:() => [H(e.rows)]})));
+    let es = catalog(asp).filter(e => e.group <= maxG && e.n >= T && e.n <= T*1.5+10);
+    const lt = layersTarget(L), deep = es.filter(e => e.layers >= lt - 1);       // se prefieren las figuras con las capas que tocan
+    if (deep.length >= 6) es = deep;
+    rec = rec.concat(es.map(e => ({name:e.name, idx:-1, get:e.get})));
   }
   return rec;
 }
 // ---------- Estado ----------
 const $ = id => document.getElementById(id);
 const board = $("board");
-let field, level = 1, tiles = [], sel = null, hist = [], cols, rows, maxz, hintPair = null, hintStep = 0;
-let lastName = "", recent = [], prevD = null, prevLevel = 0;
+let field, level = 1, tiles = [], raised = [], hist = [], cols, rows, maxz, hintPair = null, hintStep = 0;
+let lastName = "", recent = [], prevD = null, prevLevel = 0, info = null;
+let hints = 0, combo = 0, lastPair = 0, lastBreak = Date.now(), lastPraise = "";
+const reduceMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+const load = (key, def) => { try { const v = JSON.parse(localStorage.getItem(key)); return v == null ? def : v; } catch(e){ return def; } };
+const save = (key, v) => { try { localStorage.setItem(key, JSON.stringify(v)); } catch(e){} };
+const stars = load("mj-estrellas", {});             // mejores estrellas por nivel
+const esc = t => String(t).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 try { level = parseInt(localStorage.getItem("mj-nivel1")) || 1; } catch(e){}
 
 const shuf = a => { for (let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];} return a; };
@@ -280,28 +325,48 @@ function build(){
   const T = target(level);
   // Dificultad que toca en este nivel; nunca por debajo de la del nivel anterior (si venimos de él)
   let goal = Dtarget(level);
-  if (prevD !== null && prevLevel === level-1) goal = Math.max(goal, prevD + .05);
+  if (prevD !== null && prevLevel === level-1) goal = Math.max(goal, prevD + Math.max(.01, .004*(96 - prevD)));   // sube un poquito cada nivel, sin pasarse del máximo
+  const bad = new Set();                                                                       // formas que no se han podido repartir (se descartan)
   for (;;){
     let rec = recipesFor(T, level).filter(q => !recent.includes(q.name));
     if (!rec.length) rec = recipesFor(T, level);
     if (!rec.length) rec = PATS.map((p,i) => ({name:p[0], idx:i, get:() => p[1]})).filter(q => PSTAT[q.idx].n >= T);
     if (!rec.length) rec = [{name:PATS[PATS.length-1][0], idx:PATS.length-1, get:() => PATS[PATS.length-1][1]}];
-    // Se prueban varias formas al azar y se elige la que da la dificultad que toca
-    const evs = shuf(rec).slice(0, 45).map(q => evalRecipe(q, T));
-    evs.forEach(e => { e.D = Dof(e.ts.length, Math.min(e.ts.length/2, NTYPES), e.S); e.cost = e.D >= goal - .05 ? e.D - goal : 5*(goal - e.D); });
-    evs.sort((p,q) => p.cost - q.cost);
-    const near = evs.filter(e => e.cost <= evs[0].cost + .3), best = near[Math.random()*near.length|0];
+    shuf(rec);
+    const lt = layersTarget(level);
+    // Se miran formas por tandas hasta tener varias que no bajen la dificultad respecto al nivel anterior
+    const evs = []; let ok = [];
+    for (let i=0; i<rec.length && (i < 40 || ok.length < 5) && i < 400; i += 40){
+      rec.slice(i, i+40).forEach(q => { const e = evalRecipe(q, T); e.key = e.name + "|" + e.ts.length + "|" + e.layers; if (!bad.has(e.key)) evs.push(e); });
+      evs.forEach(e => { e.D = Dof(e.ts.length, Math.min(e.ts.length/2, NTYPES), e.S); });
+      ok = evs.filter(e => e.D >= goal - .3);
+    }
+    if (!ok.length){            // si solo las formas que se acaban de usar sirven, es mejor repetir forma que bajar la dificultad
+      recipesFor(T, level).filter(q => recent.includes(q.name)).slice(0, 120).forEach(q => { const e = evalRecipe(q, T); e.key = e.name + "|" + e.ts.length + "|" + e.layers; if (!bad.has(e.key)){ e.D = Dof(e.ts.length, Math.min(e.ts.length/2, NTYPES), e.S); evs.push(e); } });
+      ok = evs.filter(e => e.D >= goal - .3);
+    }
+    if (!evs.length){ bad.clear(); recent.length = 0; continue; }
+    const bestTw = Math.max(...evs.map(e => e.tw));
+    if (!ok.length) ok = [evs.reduce((p,q) => q.D > p.D ? q : p)];                                 // si ninguna llega, la más difícil
+    ok.forEach(e => {
+      const lay = e.layers < lt ? 2*(lt - e.layers) : .6*(e.layers - lt);                         // se buscan las capas que tocan (mejor de más que de menos)
+      e.cost = (e.D - goal) + lay + 4*(1 - e.tw/bestTw);                                          // y fichas lo más grandes posible
+    });
+    ok.sort((p,q) => p.cost - q.cost);
+    const near = ok.filter(e => e.cost <= ok[0].cost + .4), best = near[Math.random()*near.length|0];
     const ts = best.ts;
     if (Math.random() < .5){ const mx = Math.max(...ts.map(t => t.x)); ts.forEach(t => t.x = mx - t.x); }   // a veces en espejo
     tiles = ts;
     // Cada pareja lleva un tipo de ficha distinto (no se repite ninguno mientras no haga falta)
     const pairs = tiles.length/2;
-    const kinds = shuf(ORDER.slice(0, Math.min(NTYPES, pairs + 20))).slice(0, pairs);
+    const pool = ORDER.slice(0, Math.min(NTYPES, pairs + 20)), favs = FAV.filter(i => pool.includes(i));
+    const kinds = shuf([...favs, ...shuf(pool.filter(i => !favs.includes(i)))].slice(0, pairs));       // los favoritos siempre salen
     const order = assign(tiles, kinds);
     // Solo se acepta un tablero si se ha comprobado que se puede limpiar al 100% (si no, se descarta y se crea otro)
-    if (order && verify(tiles, order) && greedySolve(tiles)){
+    if (!(order && verify(tiles, order) && greedySolve(tiles))){ bad.add(best.key); continue; }
+    {
       lastName = best.name; recent.push(best.name); if (recent.length > 4) recent.shift();
-      prevD = best.D; prevLevel = level; break;
+      prevD = best.D; prevLevel = level; info = best; break;
     }
   }
   tiles.forEach(t => t.type0 = t.type);
@@ -312,7 +377,7 @@ function build(){
     t.el = document.createElement("div");
     t.el.className = "t";
     t.el.style.animationDelay = (t.z*100 + Math.min(i*4, 700)) + "ms";
-    t.el.onclick = () => tap(t);
+    t.el.addEventListener("pointerdown", e => { e.preventDefault(); tap(t); });
     paint(t);
     field.appendChild(t.el);
   });
@@ -322,8 +387,9 @@ function build(){
 function place(){
   if (!tiles.length) return;
   const w = board.clientWidth, h = board.clientHeight;
-  const tw = Math.min(110, (w-12)/(cols+.1), (h-12)/(rows*1.25+.15+maxz*.1));
-  const th = tw*1.25, dz = tw*.1, e = tw*.06;
+  const raise = Math.min(.1, .5/Math.max(1, maxz));          // cuánto sube cada capa (en fichas); entre todas nunca más de media ficha
+  const tw = Math.min(110, (w-12)/(cols+.1), (h-12)/(rows*1.25+.15+maxz*raise));
+  const th = tw*1.25, dz = tw*raise, e = tw*.06;
   field.style.height = h + "px";
   const ox = (w - cols*tw)/2, oy = (h - rows*th)/2 + maxz*dz/2;
   board.style.setProperty("--tw", tw + "px");
@@ -347,6 +413,7 @@ function update(){
   const a = alive(), fr = a.filter(t => isFree(t));
   tiles.forEach(t => t.el.classList.toggle("lock", t.alive && !fr.includes(t)));
   $("pairs").textContent = "Parejas: " + a.length/2;
+  $("barfill").style.width = (tiles.length ? 100*(1 - a.length/tiles.length) : 0) + "%";
   return {a, fr};
 }
 
@@ -354,30 +421,71 @@ function clearHint(){ tiles.forEach(t => t.el.classList.remove("hint")); hintPai
 
 function showTile(t){ t.el.classList.add("hint"); }
 
+// Fichas "levantadas": al tocar una ficha libre se queda arriba esperando a su pareja. Se pueden tener hasta 3 levantadas a la vez;
+// cuando se toca la pareja de cualquiera de ellas, se van las dos. No hace falta "des-seleccionar" nunca:
+// tocar otra vez una levantada no hace nada y, si levanta una cuarta, la más antigua baja sola.
+const MAXRAISED = 3;
+function lowerAll(){ raised.forEach(r => r.el.classList.remove("sel")); raised = []; }
+function buzz(ms){ try { if (navigator.vibrate) navigator.vibrate(ms); } catch(e){} }
+
+// ---------- Premios visuales (sin sonido) ----------
+const SPARK = ["#ffd54a","#ff9800","#ffffff","#7cf2a8","#ff6b6b"];
+const tileCenter = t => [parseFloat(t.el.style.left) + parseFloat(t.el.style.width)/2, parseFloat(t.el.style.top) + parseFloat(t.el.style.height)/2];
+function sparkle(t){                                   // chispitas al irse una pareja
+  if (reduceMotion) return;
+  const [cx, cy] = tileCenter(t);
+  for (let i=0; i<9; i++){
+    const p = document.createElement("i"), a = Math.random()*6.283, d = 30 + Math.random()*40;
+    p.className = "spark";
+    p.style.cssText = `left:${cx-5}px;top:${cy-5}px;background:${SPARK[i%SPARK.length]};--dx:${Math.cos(a)*d}px;--dy:${Math.sin(a)*d}px`;
+    field.appendChild(p); setTimeout(() => p.remove(), 750);
+  }
+}
+function comboPop(a, b){                               // "¡Combo x3!" si quita parejas seguidas (en menos de 5 segundos)
+  const now = Date.now(); combo = now - lastPair < 5000 ? combo + 1 : 1; lastPair = now;
+  if (combo < 2 || reduceMotion) return;
+  const [x1,y1] = tileCenter(a), [x2,y2] = tileCenter(b), el = document.createElement("div");
+  el.className = "combo"; el.textContent = "¡Combo x" + combo + "!";
+  el.style.left = Math.max(80, Math.min(board.clientWidth - 80, (x1+x2)/2)) + "px"; el.style.top = Math.max(40, (y1+y2)/2) + "px";
+  field.appendChild(el); setTimeout(() => el.remove(), 1150);
+}
+function confetti(){
+  if (reduceMotion) return;
+  const box = document.createElement("div"), cs = ["#ffd54a","#ff6b6b","#4dd0a1","#5aa9ff","#ff9f43","#d980fa"];
+  for (let i=0; i<70; i++){
+    const c = document.createElement("i"); c.className = "confetti";
+    c.style.cssText = `left:${Math.random()*100}vw;background:${cs[i%cs.length]};--dx:${(Math.random()-.5)*160}px;--r:${Math.random()*720}deg;animation-duration:${2.2+Math.random()*1.8}s;animation-delay:${Math.random()*.5}s`;
+    box.appendChild(c);
+  }
+  document.body.appendChild(box); setTimeout(() => box.remove(), 4800);
+}
+
 function tap(t){
   if (!t.alive) return;
   clearHint();
-  if (!isFree(t)){
+  if (!isFree(t)){                               // bloqueada: se sacude y listo (las levantadas siguen como estaban)
     t.el.classList.add("no");
     setTimeout(() => t.el.classList.remove("no"), 300);
     return;
   }
-  if (sel === t){ t.el.classList.remove("sel"); sel = null; return; }
-  if (!sel){ sel = t; t.el.classList.add("sel"); return; }
-  if (sel.type === t.type){
-    const pair = [sel, t];
-    pair.forEach(p => { p.alive = false; p.el.classList.remove("sel"); p.el.classList.add("gone"); });
-    hist.push(pair); sel = null;
+  if (raised.includes(t)) return;                // ya está levantada: no pasa nada
+  const mate = raised.find(r => r.alive && r.type === t.type);
+  if (mate){                                     // ¡pareja!
+    [mate, t].forEach(p => { p.alive = false; p.el.classList.remove("sel"); p.el.classList.add("gone"); });
+    raised = raised.filter(r => r !== mate);
+    hist.push([mate, t]); buzz(25);
+    sparkle(mate); sparkle(t); comboPop(mate, t);
     const {a:rest, fr} = update();
     if (!rest.length) setTimeout(win, 700);
     else if (!pairsAvailable(fr).length) setTimeout(stuck, 600);
-  } else {
-    sel.el.classList.remove("sel"); sel = t; t.el.classList.add("sel");
+    return;
   }
+  raised.push(t); t.el.classList.add("sel"); buzz(10);
+  if (raised.length > MAXRAISED) raised.shift().el.classList.remove("sel");
 }
 
 function ov(title, text, buttons){
-  $("ovt").textContent = title; $("ovp").textContent = text;
+  $("ovt").textContent = title; $("ovp").innerHTML = text;
   const box = $("ovb"); box.innerHTML = "";
   buttons.forEach(([label, fn, alt]) => {
     const b = document.createElement("button");
@@ -391,8 +499,22 @@ function ov(title, text, buttons){
 function win(){
   level++;
   try { localStorage.setItem("mj-nivel1", level); } catch(e){}
-  ov("¡Muy bien! 🎉", "Has completado el nivel " + (level-1), [["Siguiente nivel ▶", start]]);
+  const done = level - 1, n = hints === 0 ? 3 : hints <= 3 ? 2 : 1;           // estrellas: 3 sin pistas, 2 con pocas, 1 con muchas (nunca resta nada)
+  if (!(stars[done] >= n)){ stars[done] = n; save("mj-estrellas", stars); }
+  const PRAISE = ["Muy bien","Genial","Fantástico","Qué bien lo haces","Excelente","Bravo"];
+  lastPraise = "¡" + PRAISE[Math.random()*PRAISE.length|0] + (NOMBRE ? ", " + esc(NOMBRE) : "") + "!";
+  confetti();
+  winOverlay(done, n, Date.now() - lastBreak > DESCANSO_MIN*60000);
 }
+function winOverlay(done, n, tired){
+  const total = Object.values(stars).reduce((p,q) => p + q, 0);
+  const btns = [["Siguiente nivel ▶", start]];
+  if (tired){ lastBreak = Date.now(); btns.push(["😴 Descansar un rato", rest, true]); }
+  btns.push(["🔁 Repetir este nivel", () => { level--; start(); }, true]);
+  ov(lastPraise, `<div class="stars">${"⭐".repeat(n)}${"☆".repeat(3-n)}</div>Nivel ${done} completado<small>Estrellas: ${total}</small>` +
+    (tired ? "<br>☕ Llevas un buen rato jugando. ¿Descansamos un poco?" : ""), btns);
+}
+function rest(){ ov("Descansa un rato 😊", "Tu nivel está guardado. Cuando quieras, aquí seguirá esperándote.", [["▶ Seguir jugando", start]]); }
 
 function stuck(){
   ov("No quedan parejas", "No pasa nada. Puedes mezclar las fichas, empezar de nuevo o volver atrás.", [
@@ -414,21 +536,21 @@ function shuffleLeft(){
     return;
   }
   a.forEach(paint);
-  sel = null; a.forEach(t => t.el.classList.remove("sel"));
+  lowerAll();
   const {fr} = update();
   if (!pairsAvailable(fr).length) setTimeout(stuck, 300);
 }
 
 // Vuelve a poner todas las fichas como estaban al empezar el tablero
 function restart(){
-  clearHint(); sel = null; hist = [];
+  clearHint(); lowerAll(); hist = [];
   tiles.forEach(t => { t.alive = true; t.type = t.type0; paint(t); t.el.classList.remove("gone","sel"); });
   update();
 }
 
 function undo(){
   clearHint();
-  if (sel){ sel.el.classList.remove("sel"); sel = null; }
+  lowerAll();
   const pair = hist.pop(); if (!pair) return;
   pair.forEach(p => { p.alive = true; p.el.classList.remove("gone"); });
   update();
@@ -438,10 +560,9 @@ function undo(){
 $("hint").onclick = () => {
   const {a, fr} = update();
   if (!a.length) return;
-  if (sel){                      // si ya tocó una ficha, le enseñamos su pareja
-    const p = fr.find(t => t !== sel && t.type === sel.type);
-    if (p){ clearHint(); showTile(p); return; }
-  }
+  hints++;
+  const lit = [...raised].reverse().map(r => fr.find(t => t !== r && t.type === r.type)).find(Boolean);
+  if (lit){ clearHint(); showTile(lit); return; }        // si ya levantó una ficha, le enseñamos su pareja
   if (hintPair && hintStep === 1 && hintPair.every(t => t.alive)){
     showTile(hintPair[1]); hintStep = 2; return;
   }
@@ -455,11 +576,14 @@ $("hint").onclick = () => {
 $("undo").onclick = undo;
 
 function start(){
-  sel = null; hist = [];
+  raised = []; hist = []; hints = 0; combo = 0;
   $("lvl").textContent = "Nivel " + level;
   build(); place(); update();
 }
 
+{ const im = new Image(); im.onload = () => document.body.classList.add("foto"); im.src = "fondo.jpg"; }   // si subes una foto llamada fondo.jpg, sale de fondo
+board.addEventListener("pointerdown", e => { if (e.target === board || e.target.id === "field") lowerAll(); });   // tocar el fondo: bajan todas
+document.addEventListener("contextmenu", e => e.preventDefault());                                                  // sin menú al mantener pulsado
 window.addEventListener("resize", place);
 start();
 
